@@ -17,9 +17,14 @@ app.post("/signUp", async(req, res) => {
         gender: "Male",
         city: "Bhopal"
     });
-
-    await user.save();
-    res.send("User signed up successfully");
+    try{
+        await user.save();
+        res.send("User signed up successfully");
+    }
+    catch(err){
+        console.error("Error signing up user", err);
+        res.status(500).send("Error signing up user");
+    }
 });
 
 connectDB()
