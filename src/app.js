@@ -6,17 +6,13 @@ const {connectDB} = require("./config/database"); //Importing the database confi
 
 const User = require("./models/user"); //Importing the User model to interact with the user collection in the database
 
+app.use(express.json()); //Middleware to parse incoming JSON requests and make the data available in req.body
+
 app.post("/signUp", async(req, res) => {
-    const user = new User({
-        firstName: "Ajitesh",
-        lastName: "Sharma",
-        email: "ajitesh2405sharma@gmail.com",
-        userName: "ajitesh.sharma",
-        password: "ajitesh1234",
-        age: 24,
-        gender: "Male",
-        city: "Bhopal"
-    });
+    
+    //Creating a new user instance using the data from the request body
+    const user = new User(req.body);
+    
     try{
         await user.save();
         res.send("User signed up successfully");
@@ -25,6 +21,66 @@ app.post("/signUp", async(req, res) => {
         console.error("Error signing up user", err);
         res.status(500).send("Error signing up user");
     }
+});
+
+// Get user by emailID
+app.get("/user", async(req, res) => {
+    const userEmail = req.body.email; // Assuming the email is sent in the request body
+    try{
+        const user = await User.find({email: userEmail});
+
+        // const user = await User.findOne({email: userEmail}); // Using findOne to get a single user document instead of an array
+
+        if(user.length === 0){
+            res.status(404).send("User not found");
+            return;
+        }
+        res.send(user);
+    }
+    catch(err){
+        res.status(400).send("Error fetching user data");
+    }
+});
+
+//Feed API get all users from the database
+app.get("/feed", async(req, res) => {
+    try{
+        const users = await User.find({});
+        res.send(users);
+    }
+    catch(err){
+        res.status(400).send("Error fetching user data");
+    }
+});
+
+//Delete user by ID
+app.delete("/user", async(req, res) => {
+    const userId = req.body.userId; // Assuming the user ID is sent in the request body
+
+    try{
+        const deletedUser = await User.findByIdAndDelete(userId);
+        //const deletedUser = await User.findByIdAndDelete({_id : userId}); 
+        res.send("User deleted successfully");
+    }
+    catch(err){
+        res.status(400).send("Error deleting user");
+    }
+});
+
+//Update user data by ID
+app.patch("/user", async(req, res) => {
+    const userId = req.body.userId; // Assuming the user ID is sent in the request body
+
+    const data = req.body;
+
+    try{
+        const updatedUser = await User.findOneAndUpdate({_id: userId}, data);
+        //const updatedUser = await User.findByIdAndUpdate(userId, data);
+        res.send("User age updated successfully");
+    }
+    catch(err){
+        res.status(400).send("Error updating user age");
+    }       
 });
 
 connectDB()
