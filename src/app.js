@@ -9,11 +9,19 @@ const User = require("./models/user"); //Importing the User model to interact wi
 app.use(express.json()); //Middleware to parse incoming JSON requests and make the data available in req.body
 
 app.post("/signUp", async(req, res) => {
-    
+    const data = req.body;
+
     //Creating a new user instance using the data from the request body
-    const user = new User(req.body);
+    const user = new User(data);
+
     
     try{
+        const allowedFields = ["firstName", "lastName", "email", "userName", "password", "age", "gender", "photoURL", "about", "skills"];
+        const isValidField = Object.keys(data).every((field) => allowedFields.includes(field));
+    
+        if(!isValidField){
+            throw new Error("Entered invalid field!");
+        }
         await user.save();
         res.send("User signed up successfully");
     }
@@ -74,12 +82,29 @@ app.patch("/user", async(req, res) => {
     const data = req.body;
 
     try{
-        const updatedUser = await User.findOneAndUpdate({_id: userId}, data);
+        const allowedUpdates = ["lastName", "password", "gender", "about", "skills", "photoURL"];
+        const isUpdateAllowed = Object.keys(data).every((update) => allowedUpdates.includes(update));
+
+        if(!isUpdateAllowed){
+            throw new Error("You can't update this field");
+        };
+
+        if(data?.skills.length > 10){
+            throw new Error("You can add maximum 10 skills");
+        };
+
+        const updatedUser = await User.findByIdAndUpdate({_id: userId}, data, {
+            new : true, // Return the updated document
+            runValidators: true, // Run schema validators on the update operation
+            returnDocument: "after" // Return the updated document instead of the original document
+        });
+
         //const updatedUser = await User.findByIdAndUpdate(userId, data);
-        res.send("User age updated successfully");
+        
+        res.send("User data updated successfully");
     }
     catch(err){
-        res.status(400).send("Error updating user age");
+        res.status(400).send("Update failed!" + err.message);
     }       
 });
 
