@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator'); // Importing the validator library for validating email addresses
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
     firstName: {
@@ -38,7 +40,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         validate(value) {
-            if(!validator.isStrongPassoword(value)) {
+            if(!validator.isStrongPassword(value)) {
                 throw new Error("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one symbol");
             };
         }
@@ -49,7 +51,6 @@ const userSchema = new mongoose.Schema({
     },
     gender: {
         type: String,
-        enum: ["Male", "Female", "Other"],
         required: true,
         //This validate function will run only when we create new user and not when we update user data
         //So, we need to use the runValidators in findByIdAndUpdate function in app.js to run this validate function when we update user data
@@ -88,6 +89,21 @@ const userSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+userSchema.methods.getJWT = async function() {
+    const user = this;
+    
+    const token = await jwt.sign({_id : user._id}, "secretKey", {expiresIn: "7d"});
+
+    return token;
+};
+
+userSchema.methods.validatePassword = async function(password) {
+    const user = this;
+    const passwordHash = user.password;
+    const isPasswordValid = await bcrypt.compare(password, passwordHash);
+    return isPasswordValid;
+}
 
 const User = mongoose.model("User", userSchema);
 
