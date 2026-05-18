@@ -38,27 +38,30 @@ profileRouter.patch("/profile/edit", userAuth, async(req, res) => {
 
 profileRouter.patch("/profile/edit/password", userAuth, async(req, res) => {
     try{
+        //fetching old hashed password from the user
         const loggedInUser = req.user;
         const existingPassword = loggedInUser.password;
 
+        //checking if the password is valid or not
         const isPasswordValid = await validateUserPassword(req, existingPassword);
-
         if(!isPasswordValid){
             throw new Error("You have entered wrong password!")
         };
 
+        //checking if the password is strong enough or not
         const strongPassword = isStrongPassword(req);
-        
         if(!strongPassword){
             throw new Error("Please enter a strong password!");
         };
         
+        //Hashing the new password
         const {newPassword} = req.body;
-
         const passwordHash = await bcrypt.hash(newPassword, 10);
 
+        //Replacing the old hashed password with the new hashed password
         loggedInUser.password = passwordHash;
 
+        //saving the data to the database
         await loggedInUser.save();
 
         res.send({message: `${loggedInUser.firstName}, your password has been updated`, data: loggedInUser});
